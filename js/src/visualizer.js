@@ -313,16 +313,18 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
         //templateUrl: '/src/visualizer.tpl.html',
         template: `
             <div>
-            <div ng-show="!error" class="panel panel-default">
-                <div class="panel-heading">
+            <div ng-show="!error" class="card">
+                <div class="card-content">
+                    <span class="card-title">
                     <p>
-                    <button type="button" class="btn btn-link" ng-click="showAnnotations = !showAnnotations"><span class="glyphicon glyphicon-info-sign"></span></button>
+                    <button type="button" class="btn waves-effect waves-light" ng-click="showAnnotations = !showAnnotations"><i class="material-icons">info</i></button>
                     {{label}}
-                    <a type="button" class="btn" href="{{source}}"><span class="glyphicon glyphicon-download-alt"></span></a>
+                    <a type="button" class="btn waves-effect waves-light" href="{{source}}"><i class="material-icons">save_alt</i></a>
                     </p>
+                    </span>
                     <div ng-show="showAnnotations">
                         <small>
-                        <table class="table table-striped table-condensed">
+                        <table class="striped">
                             <tr><td>Source:</td><td>{{source}}</td></tr>
                             <tr><td>Name:</td><td>{{block.name}}</td></tr>
                             <tr><td>File origin:</td><td>{{block.file_origin}}</td></tr>
@@ -331,15 +333,15 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                         </table>
                         </small>
                     </div>
-                    <form class="form-inline">
-                    <select class="form-control" ng-change="switchSegment()" ng-model="currentSegmentId">
+                    <form>
+                    <select ng-change="switchSegment()" ng-model="currentSegmentId">
                         <option ng-repeat="segment in block.segments" value="{{$index}}">
                             Segment #{{$index}}
                         </option>
                     </select>
                     <!--<p>{{segment.name}}</p>
                     <p>Contains {{segment.analogsignals.length}} analog signals</p>-->
-                    <select class="form-control" ng-show="segment" ng-change="switchAnalogSignal()" ng-model="currentAnalogSignalId">
+                    <select ng-show="segment" ng-change="switchAnalogSignal()" ng-model="currentAnalogSignalId">
                         <option value="">--- Please select signal ---</option> <!-- not selected / blank option -->
                         <option ng-repeat="signal in segment.analogsignals" value="{{$index}}">
                             Signal #{{$index}} <span ng-show="signal.name">({{signal.name}})</span>
@@ -347,15 +349,15 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                     </select>
                     </form>
                 </div>
-                <div class="panel-body" ng-show="signal">
+                <div class="card-content" ng-show="signal">
                     <nvd3 options="options" data=graph_data.values id=''></nvd3>
                 </div>
             </div>
-            <div ng-show="error" class="panel panel-error">
-                <div class="panel-heading">
+            <div ng-show="error" class="card">
+                <div class="card-title">
                     <p>Error</p>
                 </div>
-                <div class="panel-body">
+                <div class="card-content">
                     {{error}}
                 </div>
             </div>
