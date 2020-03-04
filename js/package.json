@@ -7,7 +7,8 @@
     "angular-resource": "^1.4.12",
     "d3": "^3.5.17",
     "nvd3": "^1.8.5-dev",
-    "angular-nvd3": "^1.0.8"
+    "angular-nvd3": "^1.0.8",
+    "plotly.js": "^1.52.2"
   },
   "main": "visualizer.js",
   "directories": {},

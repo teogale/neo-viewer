@@ -1,6 +1,7 @@
 
 
-angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
+//angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
+angular.module('neo-visualizer', ['ng', 'ngResource'])
 
 .controller('MainCtrl', function($scope, BlockData, SegmentData, AnalogSignalData, SpikeTrainData, Graphics, $q) {
     var cache = [];
@@ -99,7 +100,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
     $scope.showMultiChannelSignal = function()
     {
         $scope.channelSignals = true;
-        $scope.channel_options = getMultiLineOptions();
+        //$scope.channel_options = getMultiLineOptions();
         AnalogSignalData.get({url: $scope.source,
                                       segment_id: $scope.currentSegmentId,
                                       analog_signal_id: $scope.currentAnalogSignalId,
@@ -117,26 +118,58 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                 }
                 console.log("** channel size " + data.values.length);
                 var graph_data = [];
+		var xs = data.times_dimensionality;
+                var ys = data.values_units;    
                 if (typeof data.times === "undefined") {
                     data.times = Graphics.get_graph_times(data);
                 }
                 data.values.forEach(
                     function(value, j) {
                         var t_start = data.times[0];
-                        var xy_data = value.map(
+                        //var xy_data = value.map(
+                        //    function(val, i){
+                        //        return {x: 1000 * (data.times[i] - t_start), y: val};
+                        //    }
+                        //);
+                        //graph_data.push({
+                        //    key: "Channel " + j,
+                        //    values: xy_data
+                        //});
+			var xi = [];
+                        var yi = [];
+                        value.forEach(
                             function(val, i){
-                                return {x: 1000 * (data.times[i] - t_start), y: val};
+                                xi.push(1000 * (data.times[i] - t_start));
+                                yi.push(val);
                             }
                         );
-                        graph_data.push({
-                            key: "Channel " + j,
-                            values: xy_data
-                        });
+                        var channel = {
+                            x: xi,
+                            y: yi,
+                            name: 'Channel #' + j,
+                            type: 'scatter'
+                        }
+                        graph_data.push(channel);
                     }
                 );
+		var layout = {
+                    title: 'Analog signal with multiple channels',
+                    xaxis: {
+                            title: {
+                                text: xs,
+                                }
+                            },
+                    yaxis: {
+                            title: {
+                                text: ys,
+                            }
+                        },
+                };
+                Plotly.newPlot('myDiv5', graph_data, layout, {displaylogo: false});    
                 $scope.channel_data = graph_data;
                 cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['graph'] = graph_data;
-                cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'] = $scope.channel_options;
+                //cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'] = $scope.channel_options;
+		cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['layout'] = layout;
             }
         ).finally(function () {
             $scope.dataLoading = false;
@@ -151,8 +184,10 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
         if (cache_block[id]['graph'] == undefined)  {
             $scope.dataLoading = true;
             console.log("Signal id: " + id);
-            $scope.block_options = getMultiLineOptions();
+            //$scope.block_options = getMultiLineOptions();
             var sig_promises = [];
+	    var xs = null;
+            var ys = null;
             $scope.block.segments.forEach(
                 function(seg, i) {
                     var sigdata = AnalogSignalData.get({url: $scope.source,
@@ -170,26 +205,57 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                 function(signals) {
                     console.log("* SIGNALS count " + signals.length);
                     var graph_data = [];
+		    xs = signals[0].times_dimensionality;
+                    ys = signals[0].values_units;
                     signals.forEach(
                         function(signal, j) {
                             if (typeof signal.times === "undefined") {
                                 signal.times = Graphics.get_graph_times(signal);
                             }
                             var t_start = signal.times[0];
-                            var xy_data = signal.values.map(
+                            //var xy_data = signal.values.map(
+                            //    function(val, i){
+                            //        return {x: 1000 * (signal.times[i] - t_start), y: val};
+                            //    }
+                            //);
+                            //graph_data.push({
+                            //    key: "Segment " + j,
+                            //    values: xy_data
+                            //});
+			    var xi = [];
+                            var yi = [];
+			    signal.values.forEach(
                                 function(val, i){
-                                    return {x: 1000 * (signal.times[i] - t_start), y: val};
+                                    xi.push(1000 * (signal.times[i] - t_start));
+                                    yi.push(val);
                                 }
                             );
-                            graph_data.push({
-                                key: "Segment " + j,
-                                values: xy_data
-                            });
+                            var trace = {
+                                x: xi,
+                                y: yi,
+                                type: 'scatter'
+                            }
+                            graph_data.push(trace);	
                         }
                     );
+	            var layout = {
+                        title: 'Selected Signals',
+                        xaxis: {
+                                title: {
+                                    text: xs,
+                                }
+                            },
+                        yaxis: {
+                                title: {
+                                    text: ys,
+                                }
+                            },
+                    };
+                    Plotly.newPlot('myDiv2', graph_data, layout, {displaylogo: false});
                     $scope.block_data = graph_data;
                     cache_block[id]["graph"] = graph_data;
-                    cache_block[id]["options"] = $scope.block_options;
+                    //cache_block[id]["options"] = $scope.block_options;
+	            cache_block["layout"] = layout;
                 },
                 function(error) {
                     console.log(error);
@@ -202,7 +268,9 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
             {
                 console.log("Switching to cached block signals of signal #" + id);
                 $scope.block_data = cache_block[id]['graph'];
-                $scope.block_options = cache_block[id]['options'];
+                //$scope.block_options = cache_block[id]['options'];
+		var layout = cache_block["layout"];
+                Plotly.newPlot('myDiv2', $scope.block_data, layout, {displaylogo: false});
                 $scope.dataLoading = false;
             }
     };
@@ -232,7 +300,9 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                 $scope.blockSignals = null;
                 $scope.dataLoading = true;
                 $scope.segmentSignals = true;
-                $scope.segment_options = getMultiLineOptions();
+		var xs = null;
+                var ys = null;    
+                //$scope.segment_options = getMultiLineOptions();
                 var promises = [];
 
                 $scope.segment.analogsignals.forEach(
@@ -252,26 +322,57 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                     function(signals) {
                         console.log("SIGNALS count " + signals.length);
                         var graph_data = [];
+			xs = signals[0].times_dimensionality;
+                        ys = signals[0].values_units;    
                         signals.forEach(
                             function(signal, j) {
                                 if (typeof signal.times === "undefined") {
                                     signal.times = Graphics.get_graph_times(signal);
                                 }
                                 var t_start = signal.times[0];
-                                var xy_data = signal.values.map(
+                                //var xy_data = signal.values.map(
+                                //    function(val, i){
+                                //        return {x: 1000 * (signal.times[i] - t_start), y: val};
+                                //    }
+                                //);
+                                //graph_data.push({
+                                //    key: "Signal " + j,
+                                //    values: xy_data
+                                //});
+				var xi = [];
+                                var yi = [];
+                                signal.values.forEach(
                                     function(val, i){
-                                        return {x: 1000 * (signal.times[i] - t_start), y: val};
+                                        xi.push(1000 * (signal.times[i] - t_start));
+                                        yi.push(val);
                                     }
                                 );
-                                graph_data.push({
-                                    key: "Signal " + j,
-                                    values: xy_data
-                                });
+                                var trace = {
+                                    x: xi,
+                                    y: yi,
+                                    type: 'scatter'
+                                }
+                                graph_data.push(trace);
                             }
                         );
+			var layout = {
+                            title: 'Signals of segment',
+                            xaxis: {
+                                title: {
+                                    text: xs,
+                                }
+                            },
+                            yaxis: {
+                                    title: {
+                                        text: ys,
+                                    }
+                                },
+                        };
+                        Plotly.newPlot('myDiv4', graph_data, layout, {displaylogo: false});    
                         $scope.segment_data = graph_data;
                         cache_seg[$scope.currentSegmentId]['graph'] = graph_data;
-                        cache_seg[$scope.currentSegmentId]['options'] = $scope.segment_options;
+                        //cache_seg[$scope.currentSegmentId]['options'] = $scope.segment_options;
+			cache_seg[$scope.currentSegmentId]['layout'] = layout;
                     },
                     function(error) {
                         console.log(error);
@@ -283,8 +384,10 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
               else {
                     console.log("Switching to cached signals in segment #" + $scope.currentSegmentId);
                     $scope.segment_data = cache_seg[$scope.currentSegmentId]['graph'];
-                    $scope.segment_options = cache_seg[$scope.currentSegmentId]['options'];
-                    $scope.signal = null;
+                    //$scope.segment_options = cache_seg[$scope.currentSegmentId]['options'];
+                    var layout = cache_seg[$scope.currentSegmentId]['layout'];
+                    Plotly.newPlot('myDiv4', $scope.segment_data, layout, {displaylogo: false});
+		    $scope.signal = null;
                     $scope.blockSignals = null;
                     $scope.segmentSignals = true;
                     $scope.dataLoading = false;
@@ -420,10 +523,26 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                         console.log(data);
                         Graphics.initGraph($scope.signal).then(function(graph_data) {
                             $scope.graph_data = graph_data;
-                            $scope.options = Graphics.getOptions("View of analogsignal", "", "", graph_data.values, $scope.signal, $scope.height)
-                            $scope.$apply();
+                            //$scope.options = Graphics.getOptions("View of analogsignal", "", "", graph_data.values, $scope.signal, $scope.height)
+                            var layout = {
+                                title: 'Analog Signal',
+                                xaxis: {
+                                    title: {
+                                        text: $scope.signal.times_dimensionality,
+                                    }
+                                },
+                                yaxis: {
+                                    title: {
+                                        text: $scope.signal.values_units,
+                                    }
+                                }
+                            };
+                            Plotly.newPlot('myDiv', graph_data.values, layout, {displaylogo: false});
+			    	
+			    $scope.$apply();
                             cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['graph'] = graph_data;
-                            cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'] = $scope.options;
+                            //cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'] = $scope.options;
+		            cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['layout'] = layout;
                         });
                     },
                     function(err) {
@@ -444,7 +563,9 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                 $scope.signal = $scope.block.segments[$scope.currentSegmentId].irregularlysampledsignals[$scope.currentAnalogSignalId];
             }
             $scope.graph_data = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['graph'];
-            $scope.options = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'];
+            //$scope.options = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'];
+	    var layout = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['layout'];
+            Plotly.newPlot('myDiv', $scope.graph_data.values, layout, {displaylogo: false});	
             $scope.dataLoading = false;
         }
     }
@@ -468,19 +589,49 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                     var graph_data = [];
                     Object.keys(data).forEach(function(key, i) {
                         if (typeof data[key]['times'] !== 'undefined') {
-                            var xy_data = data[key]['times'].map(
-                                    function(val, j){
-                                        return {x: val, y: i, shape: 'circle'};
-                                    }
-                                )
-                                graph_data.push({
-                                    key: "Spike Train #" + i,
-                                    values: xy_data
-                                 });
+                            //var xy_data = data[key]['times'].map(
+                            //        function(val, j){
+                            //            return {x: val, y: i, shape: 'circle'};
+                            //        }
+                            //    )
+                            //    graph_data.push({
+                            //        key: "Spike Train #" + i,
+                            //        values: xy_data
+                            //     });
+			    var xi = [];
+                            var yi = [];
+                            data[key]['times'].forEach(
+                                function(val, j){
+                                    xi.push(val);
+                                    yi.push(i);
+                                }
+                            );
+                            var st = {
+                                x: xi,
+                                y: yi,
+                                name: 'Spike Train #' + i,
+                                mode: 'markers'
                             }
+                            graph_data.push(st);     
+                        }
                     });
+		    var layout = {
+                                title: 'Spike Trains',
+                                xaxis: {
+                                    title: {
+                                        text: "Time",
+                                    }
+                                },
+                                yaxis: {
+                                    title: {
+                                        text: "Spike Trains",
+                                    }
+                                }
+                            };
+                    Plotly.newPlot('myDiv3', graph_data, layout, {displaylogo: false});	
                     $scope.spiketrains_data = graph_data;
                     cache_spiketrains[$scope.currentSegmentId]['graph'] = graph_data;
+	            cache_spiketrains[$scope.currentSegmentId]['layout'] = layout;		
                 },
                 function(err) {
                     console.log("Error in getting spike trains");
@@ -493,7 +644,9 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
             console.log("Switching to cached spike train  in segment #" + $scope.currentSegmentId);
             $scope.spiketrains = $scope.block.segments[$scope.currentSegmentId].spiketrains;
             $scope.spiketrains_data = cache_spiketrains[$scope.currentSegmentId]['graph'];
-            $scope.spiketrains_options = cache_spiketrains[$scope.currentSegmentId]['options'];
+            //$scope.spiketrains_options = cache_spiketrains[$scope.currentSegmentId]['options'];
+            var layout = cache_spiketrains[$scope.currentSegmentId]['layout'];
+            Plotly.newPlot('myDiv3', $scope.spiketrains_data, layout, {displaylogo: false});
             $scope.dataLoading = false;
         }
     }
@@ -631,7 +784,18 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
             });
         }
 
-        var get_graph_values = function(raw_data) {
+	var get_graph_values = function(raw_data) {
+            return new Promise(function(resolve, reject) {
+                var temp = {
+                        x: raw_data.times,
+                        y: raw_data.values,
+                        type: 'scatter'
+                    };
+                resolve(temp);
+            })
+        }
+
+        var get_graph_values2 = function(raw_data) {
             return new Promise(function(resolve, reject) {
                 var values_temp = new Array()
                 for (var a in raw_data.values) {
@@ -721,6 +885,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
 
             initGraph: initGraph,
             get_graph_values: get_graph_values,
+	    get_graph_values2: get_graph_values2,		
             get_graph_times: get_graph_times
         };
 
@@ -835,19 +1000,24 @@ angular.module('neo-visualizer', ['ng', 'ngResource', 'nvd3'])
                 </div>
                 <div ng-if="dataLoading" class="loader"></div>
                 <div class="panel-body" ng-show="signal && !dataLoading && graphType=='analogsignals'">
-                    <nvd3 options="options" data=graph_data.values id=''></nvd3>
+                    <!--<nvd3 options="options" data=graph_data.values id=''></nvd3>-->
+	    	    <div id='myDiv'></div>	
                 </div>
                 <div ng-show="segmentSignals">
-                    <nvd3 options="segment_options" data="segment_data"></nvd3>
+                    <!--<nvd3 options="segment_options" data="segment_data"></nvd3>-->
+	    	    <div id='myDiv4'></div>
                 </div>
                 <div ng-show="blockSignals">
-                    <nvd3 options="block_options" data="block_data"></nvd3>
+                    <!--<nvd3 options="block_options" data="block_data"></nvd3>-->
+	    	    <div id='myDiv2'></div>
                 </div>
                 <div ng-show="channelSignals">
-                    <nvd3 options="channel_options" data="channel_data"></nvd3>
+                    <!--<nvd3 options="channel_options" data="channel_data"></nvd3>-->
+	    	    <div id='myDiv5'></div>
                 </div>
                  <div ng-show="spiketrains && !dataLoading && graphType=='spiketrains' || spiketrainselect">
-                    <nvd3 options="spiketrains_options" data="spiketrains_data"></nvd3>
+                    <!--<nvd3 options="spiketrains_options" data="spiketrains_data"></nvd3>-->
+	            <div id='myDiv3'></div>
                  </div>
             </div>
             <div ng-show="error" class="panel panel-error">
