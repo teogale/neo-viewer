@@ -165,7 +165,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                             }
                         },
                 };
-                Plotly.newPlot('myDiv5', graph_data, layout, {displaylogo: false});    
+                Plotly.newPlot($scope.divid, graph_data, layout, {displaylogo: false});    
                 $scope.channel_data = graph_data;
                 cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['graph'] = graph_data;
                 //cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'] = $scope.channel_options;
@@ -251,7 +251,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                                 }
                             },
                     };
-                    Plotly.newPlot('myDiv2', graph_data, layout, {displaylogo: false});
+                    Plotly.newPlot($scope.divid, graph_data, layout, {displaylogo: false});
                     $scope.block_data = graph_data;
                     cache_block[id]["graph"] = graph_data;
                     //cache_block[id]["options"] = $scope.block_options;
@@ -270,7 +270,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                 $scope.block_data = cache_block[id]['graph'];
                 //$scope.block_options = cache_block[id]['options'];
 		var layout = cache_block["layout"];
-                Plotly.newPlot('myDiv2', $scope.block_data, layout, {displaylogo: false});
+                Plotly.newPlot($scope.divid, $scope.block_data, layout, {displaylogo: false});
                 $scope.dataLoading = false;
             }
     };
@@ -368,7 +368,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                                     }
                                 },
                         };
-                        Plotly.newPlot('myDiv4', graph_data, layout, {displaylogo: false});    
+                        Plotly.newPlot($scope.divid, graph_data, layout, {displaylogo: false});    
                         $scope.segment_data = graph_data;
                         cache_seg[$scope.currentSegmentId]['graph'] = graph_data;
                         //cache_seg[$scope.currentSegmentId]['options'] = $scope.segment_options;
@@ -386,7 +386,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                     $scope.segment_data = cache_seg[$scope.currentSegmentId]['graph'];
                     //$scope.segment_options = cache_seg[$scope.currentSegmentId]['options'];
                     var layout = cache_seg[$scope.currentSegmentId]['layout'];
-                    Plotly.newPlot('myDiv4', $scope.segment_data, layout, {displaylogo: false});
+                    Plotly.newPlot($scope.divid, $scope.segment_data, layout, {displaylogo: false});
 		    $scope.signal = null;
                     $scope.blockSignals = null;
                     $scope.segmentSignals = true;
@@ -411,6 +411,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
         console.log("Loading data from " + $scope.source);
         $scope.block = null;
         $scope.segment = null;
+	$scope.divid = "graph-" + Math.round(Math.random() * 1000);    
         //$scope.label = $scope.source.substring($scope.source.lastIndexOf('/') + 1);
         BlockData.get({url: $scope.source, type: $scope.iotype }).$promise.then(
             function(data) {
@@ -537,9 +538,18 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                                     }
                                 }
                             };
-                            Plotly.newPlot('myDiv', graph_data.values, layout, {displaylogo: false});
-			    	
-			    $scope.$apply();
+                            //Plotly.newPlot($scope.divid, graph_data.values, layout, {displaylogo: false});
+			    if($scope.spiketrainselect) {
+                                var graph_div = document.createElement("div");
+                                document.getElementById($scope.divid).appendChild(graph_div)
+                                Plotly.newPlot(graph_div, graph_data.values, layout, {displaylogo: false});
+                            }
+                            else {
+                                Plotly.newPlot($scope.divid, graph_data.values, layout, {displaylogo: false});
+
+                            }
+
+			    //$scope.$apply();
                             cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['graph'] = graph_data;
                             //cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'] = $scope.options;
 		            cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['layout'] = layout;
@@ -565,7 +575,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
             $scope.graph_data = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['graph'];
             //$scope.options = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['options'];
 	    var layout = cache[$scope.currentSegmentId][$scope.currentAnalogSignalId]['layout'];
-            Plotly.newPlot('myDiv', $scope.graph_data.values, layout, {displaylogo: false});	
+            Plotly.newPlot($scope.divid, $scope.graph_data.values, layout, {displaylogo: false});	
             $scope.dataLoading = false;
         }
     }
@@ -628,7 +638,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                                     }
                                 }
                             };
-                    Plotly.newPlot('myDiv3', graph_data, layout, {displaylogo: false});	
+                    Plotly.newPlot($scope.divid, graph_data, layout, {displaylogo: false});	
                     $scope.spiketrains_data = graph_data;
                     cache_spiketrains[$scope.currentSegmentId]['graph'] = graph_data;
 	            cache_spiketrains[$scope.currentSegmentId]['layout'] = layout;		
@@ -646,7 +656,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
             $scope.spiketrains_data = cache_spiketrains[$scope.currentSegmentId]['graph'];
             //$scope.spiketrains_options = cache_spiketrains[$scope.currentSegmentId]['options'];
             var layout = cache_spiketrains[$scope.currentSegmentId]['layout'];
-            Plotly.newPlot('myDiv3', $scope.spiketrains_data, layout, {displaylogo: false});
+            Plotly.newPlot($scope.divid, $scope.spiketrains_data, layout, {displaylogo: false});
             $scope.dataLoading = false;
         }
     }
@@ -999,26 +1009,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                     </form>
                 </div>
                 <div ng-if="dataLoading" class="loader"></div>
-                <div class="panel-body" ng-show="signal && !dataLoading && graphType=='analogsignals'">
-                    <!--<nvd3 options="options" data=graph_data.values id=''></nvd3>-->
-	    	    <div id='myDiv'></div>	
-                </div>
-                <div ng-show="segmentSignals">
-                    <!--<nvd3 options="segment_options" data="segment_data"></nvd3>-->
-	    	    <div id='myDiv4'></div>
-                </div>
-                <div ng-show="blockSignals">
-                    <!--<nvd3 options="block_options" data="block_data"></nvd3>-->
-	    	    <div id='myDiv2'></div>
-                </div>
-                <div ng-show="channelSignals">
-                    <!--<nvd3 options="channel_options" data="channel_data"></nvd3>-->
-	    	    <div id='myDiv5'></div>
-                </div>
-                 <div ng-show="spiketrains && !dataLoading && graphType=='spiketrains' || spiketrainselect">
-                    <!--<nvd3 options="spiketrains_options" data="spiketrains_data"></nvd3>-->
-	            <div id='myDiv3'></div>
-                 </div>
+                <div id={{divid}}></div> 
             </div>
             <div ng-show="error" class="panel panel-error">
                 <div class="panel-heading">
@@ -1030,7 +1021,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
             </div>
             </div>
         `,
-        scope: { source: '@', height: '@', iotype: '@', block: '@', downsamplefactor: '@', segmentid: '@', signalid: '@', spiketrainselect: '@',},
+        scope: { source: '@', height: '@', iotype: '@', block: '@', downsamplefactor: '@', segmentid: '@', signalid: '@', spiketrainselect: '@', divid: '@'},
         controller: 'MainCtrl'
     }
 })
