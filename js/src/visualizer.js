@@ -473,8 +473,8 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                     $scope.spiketrains = data;
                     $scope.block.segments[$scope.currentSegmentId].spiketrains = $scope.spiketrains;
                     console.log(data);
-                    $scope.spiketrains_options = getScatterChartOptions();
-                    cache_spiketrains[$scope.currentSegmentId]['options'] = $scope.spiketrains_options;
+                    //$scope.spiketrains_options = getScatterChartOptions();
+                    //cache_spiketrains[$scope.currentSegmentId]['options'] = $scope.spiketrains_options;
                     var graph_data = [];
                     Object.keys(data).forEach(function(key, i) {
                         if (typeof data[key]['times'] !== 'undefined') {
