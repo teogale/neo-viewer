@@ -1,29 +1,37 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-from django.shortcuts import render
 from django.http import JsonResponse
-
 from rest_framework.views import APIView
 from neo.io import get_io
 from neo import io
-from rest_framework.response import Response
 from rest_framework import status
+from os.path import basename
 try:
     from urllib import urlretrieve, HTTPError
 except ImportError:
     from urllib.request import urlretrieve, HTTPError
 try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
+try:
     unicode
 except NameError:
     unicode = str
+# import logging
+from time import sleep
+
+# logger = logging.getLogger(__name__)
 
 
 def _get_file_from_url(request):
     url = request.GET.get('url')
     if url:
-        filename = url[url.rfind("/") + 1:]
-        urlretrieve(url, filename)
+        response = urlopen(url)
+        filename = basename(response.url)
+        if not os.path.isfile(filename):
+            urlretrieve(url, filename)
         # todo: wrap previous line in try..except so we can return a 404 if the file is not found
         #       or a 500 if the local disk is full
 
@@ -50,17 +58,26 @@ def _handle_dict(ob):
 class Block(APIView):
 
     def get(self, request, format=None, **kwargs):
-
+        lazy = False
         na_file = _get_file_from_url(request)
-
+        neo_io = get_io(na_file)
         if 'type' in request.GET and request.GET.get('type'):
             iotype = request.GET.get('type')
             method = getattr(io, iotype)
             r = method(filename=na_file)
-            block = r.read_block()
+            if r.support_lazy:
+                block = r.read_block(lazy=True)
+                lazy = True
+            else:
+                block = r.read_block()
         else:
             try:
-                block = get_io(na_file).read_block()
+                if neo_io.support_lazy:
+                    block = neo_io.read_block(lazy=True)
+                    lazy = True
+                else:
+                    block = neo_io.read_block()
+
             except IOError as err:
                 # todo: need to be more fine grained. There could be other reasons
                 #       for an IOError
@@ -76,6 +93,7 @@ class Block(APIView):
             # 'index': block.index,
             'name': block.name or "",
             'rec_datetime': block.rec_datetime,
+            'file_name': na_file,
             'segments': [
                 {
                     'name': s.name or "",
@@ -95,8 +113,8 @@ class Block(APIView):
             }]}
 
         # check for channels
-        if (block.segments[0].analogsignals and len(block.segments[0].analogsignals[0][0]) > 1) \
-                or (block.segments[0].irregularlysampledsignals and len(block.segments[0].irregularlysampledsignals[0][0]) > 1):
+        if (block.segments[0].analogsignals and block.segments[0].analogsignals[0].shape[1] > 1) \
+                or (block.segments[0].irregularlysampledsignals and block.segments[0].irregularlysampledsignals[0].shape[1] > 1):
             block_data['block'][0]['channels'] = 'multi'
 
         # check for spike trains
@@ -132,10 +150,14 @@ class Block(APIView):
 class Segment(APIView):
 
     def get(self, request, format=None, **kwargs):
-
+        lazy = False
         na_file = _get_file_from_url(request)
-
-        block = get_io(na_file).read_block()
+        neo_io = get_io(na_file)
+        if neo_io.support_lazy:
+            block = neo_io.read_block(lazy=True)
+            lazy = True
+        else:
+            block = neo_io.read_block()
         id_segment = int(request.GET['segment_id'])
         # todo, catch MultiValueDictKeyError in case segment_id isn't given, and return a 400 Bad Request response
         segment = block.segments[id_segment]
@@ -157,7 +179,7 @@ class Segment(APIView):
                     'spiketrains': [{} for s in segment.spiketrains],
                     'analogsignals': [{} for a in segment.analogsignals],
                     'irregularlysampledsignals': [{} for ir in segment.irregularlysampledsignals],
-                    'as_prop': [{'size': e.size, 'name': e.name} for e in segment.analogsignals],
+                    # 'as_prop': [{'size': e.size, 'name': e.name} for e in segment.analogsignals],
                     }
 
         # check for multiple 'matching' (same units/sampling rates) analog signals in a single Segment
@@ -190,9 +212,20 @@ class Segment(APIView):
 class AnalogSignal(APIView):
 
     def get(self, request, format=None, **kwargs):
+        lazy = False
         na_file = _get_file_from_url(request)
+        while True:  # todo, find better solution
+            try: 
+                neo_io = get_io(na_file)
+                break
+            except OSError:
+                sleep(5)
 
-        block = get_io(na_file).read_block()
+        if neo_io.support_lazy:
+            block = neo_io.read_block(lazy=True)
+            lazy = True
+        else:
+            block = neo_io.read_block()
         id_segment = int(request.GET['segment_id'])
         id_analog_signal = int(request.GET['analog_signal_id'])
         # todo, catch MultiValueDictKeyError in case segment_id or analog_signal_id aren't given, and return a 400 Bad Request response
@@ -201,7 +234,10 @@ class AnalogSignal(APIView):
         graph_data = {}
         analogsignal = None
         if len(segment.analogsignals) > 0:
-            analogsignal = segment.analogsignals[id_analog_signal]
+            if lazy:
+                analogsignal = segment.analogsignals[id_analog_signal].load()
+            else:
+                analogsignal = segment.analogsignals[id_analog_signal]
             graph_data["t_start"] = analogsignal.t_start.item()
             graph_data["t_stop"] = analogsignal.t_stop.item()
             if request.GET['down_sample_factor']:
@@ -209,44 +245,32 @@ class AnalogSignal(APIView):
             else:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item()
         elif len(segment.irregularlysampledsignals) > 0:
-            analogsignal = segment.irregularlysampledsignals[id_analog_signal]
-            analog_signal_times = []
-            for item in analogsignal.times:
-                analog_signal_times.append(item.item())
-            graph_data["times"] = analog_signal_times
+            if lazy:
+                analogsignal = segment.irregularlysampledsignals[id_analog_signal].load()
+            else:
+                analogsignal = segment.irregularlysampledsignals[id_analog_signal]
+            graph_data["times"] = analogsignal.times.magnitude.tolist()
 
         # todo, catch any IndexErrors, and return a 404 response
 
         analog_signal_values = []
 
-        if len(analogsignal[0]) > 1:
+        if analogsignal.shape[1] > 1:
             # multiple channels
             if not len(segment.irregularlysampledsignals) > 0 and request.GET['down_sample_factor']:
+                dsf = int(request.GET['down_sample_factor'])
                 for i in range(0, len(analogsignal[0])):
-                    channel = []
-                    for j, item in enumerate(analogsignal):
-                        if j % int(request.GET['down_sample_factor']) == 0:
-                            channel.append(item[i].item())
-                        else:
-                            continue
-                    analog_signal_values.append(channel)
+                    analog_signal_values.append(analogsignal[::dsf, i].magnitude[:, 0].tolist())
             else:
                 for i in range(0, len(analogsignal[0])):
-                    channel = []
-                    for item in analogsignal:
-                        channel.append(item[i].item())
-                    analog_signal_values.append(channel)
+                    analog_signal_values.append(analogsignal[::, i].magnitude[:, 0].tolist())
         else:
             # single channel
             if not len(segment.irregularlysampledsignals) > 0 and request.GET['down_sample_factor']:
-                for i, item in enumerate(analogsignal):
-                    if i % int(request.GET['down_sample_factor']) == 0:
-                        analog_signal_values.append(item.item())
-                    else:
-                        continue
+                dsf = int(request.GET['down_sample_factor'])
+                analog_signal_values = analogsignal[::dsf, 0].magnitude[:, 0].tolist()
             else:
-                for item in analogsignal:
-                    analog_signal_values.append(item.item())
+                analog_signal_values = analogsignal.magnitude[:, 0].tolist()
 
         graph_data["values"] = analog_signal_values
         graph_data["name"] = analogsignal.name
@@ -259,17 +283,31 @@ class AnalogSignal(APIView):
 class SpikeTrain(APIView):
 
     def get(self, request, format=None, **kwargs):
+        lazy = False
         na_file = _get_file_from_url(request)
+        while True:
+            try:
+                neo_io = get_io(na_file)
+                break
+            except OSError:
+                sleep(5)
 
-        block = get_io(na_file).read_block()
+        if neo_io.support_lazy:
+            block = neo_io.read_block(lazy=True)
+            lazy = True
+        else:
+            block = neo_io.read_block()
         id_segment = int(request.GET['segment_id'])
         segment = block.segments[id_segment]
-        spiketrains = segment.spiketrains
+
+        if lazy:
+            spiketrains = segment.spiketrains.load()
+        else:
+            spiketrains = segment.spiketrains
+
         graph_data = {}
 
         for idx, st in enumerate(spiketrains):
-            graph_data[idx] = {'units': st.units.item(), 't_stop': st.t_stop.item(), 'times': []}
-            for t in st.times:
-                graph_data[idx]['times'].append(t.item())
+            graph_data[idx] = {'units': st.units.item(), 't_stop': st.t_stop.item(), 'times': st.times.magnitude.tolist()}
 
         return JsonResponse(graph_data)

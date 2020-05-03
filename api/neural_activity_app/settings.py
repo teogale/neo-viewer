@@ -27,6 +27,7 @@ SECRET_KEY = '$4zyq@#shcuqmvk!mvt^m_w7intuj^hd)f=(@ykvnympnb=*)i'
 DEBUG = True
 
 ALLOWED_HOSTS = ['neo-viewer.brainsimulation.eu',
+                 'neo-viewer-staging.brainsimulation.eu',
                  'neo-viewer-dev.brainsimulation.eu',
                  '127.0.0.1']
 
@@ -138,3 +139,23 @@ CORS_ORIGIN_ALLOW_ALL = True
 #CORS_ALLOW_METHODS = (
 #    'GET',
 #)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug01.log',
+        },
+    },
+    'loggers': {
+        'neoview': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
