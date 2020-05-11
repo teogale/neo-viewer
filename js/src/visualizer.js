@@ -690,13 +690,15 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                     </div>
                     <form class="form-inline">
                     <div ng-show="segment.consistency">
-                        <label>Show all signals on the same axes:
-                            <input type="checkbox" ng-model="segmentCheck" ng-change="showSegmentSignals(segmentCheck)" >
+                        <label>
+                            <input type="checkbox" ng-model="segmentCheck" ng-change="showSegmentSignals(segmentCheck)">
+	    		    <span>Show all signals on the same axes</span>	
                         </label>
                     </div>
                     <div ng-show="block.consistency">
-                        <label>Show signals from all segments on the same axes:
+                        <label>
                             <input type="checkbox" ng-model="blockCheck" ng-change="showBlockSignals(blockCheck)">
+	    		    <span>Show signals from all segments on the same axes</span>	
                         </label>
                     </div>
                     <div ng-show="!blockSignals && !block.spike_trains">
