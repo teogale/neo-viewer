@@ -60,7 +60,6 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                     }
                 );
 		var layout = {
-                    title: 'Analog signal with multiple channels',
                     xaxis: {
                             title: {
                                 text: xs,
@@ -135,7 +134,6 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                         }
                     );
 	            var layout = {
-                        title: 'Selected Signals',
                         xaxis: {
                                 title: {
                                     text: xs,
@@ -240,7 +238,6 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                             }
                         );
 			var layout = {
-                            title: 'Signals of segment',
                             xaxis: {
                                 title: {
                                     text: xs,
@@ -407,7 +404,6 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                         Graphics.initGraph($scope.signal).then(function(graph_data) {
                             $scope.graph_data = graph_data;
                             var layout = {
-                                title: 'Analog Signal',
                                 xaxis: {
                                     title: {
                                         text: $scope.signal.times_dimensionality,
@@ -496,7 +492,6 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                         }
                     });
 		    var layout = {
-                                title: 'Spike Trains',
                                 xaxis: {
                                     title: {
                                         text: "Time",
