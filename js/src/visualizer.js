@@ -403,7 +403,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                             console.log("Segment has irregularly sampled signals");
                             $scope.block.segments[$scope.currentSegmentId].irregularlysampledsignals[$scope.currentAnalogSignalId] = $scope.signal;
                         }
-                        console.log(data);
+                        //console.log(data);
                         Graphics.initGraph($scope.signal).then(function(graph_data) {
                             $scope.graph_data = graph_data;
                             var layout = {
@@ -472,9 +472,9 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                 function(data) {
                     $scope.spiketrains = data;
                     $scope.block.segments[$scope.currentSegmentId].spiketrains = $scope.spiketrains;
-                    console.log(data);
-                    $scope.spiketrains_options = getScatterChartOptions();
-                    cache_spiketrains[$scope.currentSegmentId]['options'] = $scope.spiketrains_options;
+                    //console.log(data);
+                    //$scope.spiketrains_options = getScatterChartOptions();
+                    //cache_spiketrains[$scope.currentSegmentId]['options'] = $scope.spiketrains_options;
                     var graph_data = [];
                     Object.keys(data).forEach(function(key, i) {
                         if (typeof data[key]['times'] !== 'undefined') {
