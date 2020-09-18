@@ -102,7 +102,7 @@ class test_views(TestCase):
                
     def test_segment(self):
 
-          # segment_id required for Segment().get()
+          # url && segment_id required for Segment().get()
           # segment data --- type
           # annotation   --- dictionnary
           # description  --- string
@@ -177,4 +177,64 @@ class test_views(TestCase):
         pass
       
 
-    
+    def test_get_block_missing_param(self):
+          # block made to test jsonresponse when missing requirement
+          # url parameter(string) is required for block().get()
+
+          # missing url test
+          request = factory.get('blockdata/',{}, format='json')
+          block = Block().get(request)
+          json_data = json.loads(block.content)
+          self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
+   
+
+    def test_get_segment_missing_param(self):
+          # test for missing requirement in segment
+          # url parameter(string) is requirement for segment().get()
+          # segment_id --- int
+
+          # missing url test
+          request = factory.get('segmentdata/',{}, format='json')
+          segment = Segment().get(request)
+          json_data = json.loads(segment.content)
+
+          self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
+          
+          # missing segment_id
+          request = factory.get('segmentdata/',{"url":url_full_test_file}, format='json')
+          segment = Segment().get(request)
+          json_data = json.loads(segment.content)
+          self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
+          
+         
+
+    def test_get_analogsignal_missing_param(self):
+          # test for missing requirement in analogsignal
+          # url parameter(string) is requirement for analogsignal().get()
+          # segment_id --- int
+          # analog_signal_id --- int 
+          # downsamplingfactor --- int 
+
+          # missing url test
+          request = factory.get('analogsignaldata/',{}, format='json')
+          analogsignal = AnalogSignal().get(request)
+          json_data = json.loads(analogsignal.content)
+          self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
+
+          # missing segment_id
+          request = factory.get('analogsignaldata/',{"url":url_full_test_file}, format='json')
+          analogsignal = AnalogSignal().get(request)
+          json_data = json.loads(analogsignal.content)
+          self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
+
+          # missing analog_signal_id
+          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1}, format='json')
+          analogsignal = AnalogSignal().get(request)
+          json_data = json.loads(analogsignal.content)
+          self.assertEqual(json_data,{'error': 'analog_signal_id parameter is missing','message': ''})
+
+       
+        
+        
+        
+  
