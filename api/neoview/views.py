@@ -296,7 +296,7 @@ class AnalogSignal(APIView):
             graph_data["t_start"] = analogsignal.t_start.item()
             graph_data["t_stop"] = analogsignal.t_stop.item()
             
-            if request.GET.get('down_sample_factor'):
+            if request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item() * int(request.GET['down_sample_factor'])
             else:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item()
@@ -313,7 +313,7 @@ class AnalogSignal(APIView):
 
         if analogsignal.shape[1] > 1:
             # multiple channels
-            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor'):
+            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
                 dsf = int(request.GET['down_sample_factor'])
                 for i in range(0, len(analogsignal[0])):
                     analog_signal_values.append(analogsignal[::dsf, i].magnitude[:, 0].tolist())
@@ -322,7 +322,7 @@ class AnalogSignal(APIView):
                     analog_signal_values.append(analogsignal[::, i].magnitude[:, 0].tolist())
         else:
             # single channel
-            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor'):
+            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
                 dsf = int(request.GET['down_sample_factor'])
                 analog_signal_values = analogsignal[::dsf, 0].magnitude[:, 0].tolist()
             else:
