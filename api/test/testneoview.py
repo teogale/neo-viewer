@@ -101,7 +101,7 @@ class test_views(TestCase):
                self.assertEqual(json_data["block"][0]['segments'][i]['spiketrains'],[])
                
     def test_segment(self):
-
+          
           # url && segment_id required for Segment().get()
           # segment data --- type
           # annotation   --- dictionnary
@@ -131,7 +131,7 @@ class test_views(TestCase):
 
 
     def test_get_analogsignal(self):
-
+         
          # analogsignal require segment_id, analog_signal_id, down_sample_factor
        
          # analogsignal data --- type
@@ -146,7 +146,7 @@ class test_views(TestCase):
          name = ['Chan0mV','AO#0']
          valueunit = ['mV','nA']
          for analogsignal_id in range(2):
-          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1,"analog_signal_id":analogsignal_id,},format='json')
+          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1,"analog_signal_id":analogsignal_id},format='json')
           analog_signal = AnalogSignal().get(request)
           json_data = json.loads(analog_signal.content)
        
@@ -160,93 +160,125 @@ class test_views(TestCase):
          
           self.assertEqual(json_data['values_units'],valueunit[analogsignal_id])
 
-
-
-
-
     def test_spriketrain(self):
-         #test_file = "https://github.com/teogale/test_file_api/blob/master/spiketrainsx2.h5"
-         
-         # to test spiketrain an other file is needed as 96711008.abf doesnt contain one
-         # request = factory.get('spiketraindata/',{"url":test_file}, format='json')
-         # spiketrain = SpikeTrain().get(request)
-         # json_data = json.loads(spiketrain.content)
-         # infinite loop
-         # OsError unable to open file (file signature not found)
-         #print(json_data)
-        pass
+
+          # compose of 1 segment
+          # 19 spiketrain 
+          # units --- float
+          # t_stop --- float
+          # times --- list
+          # to test spiketrain an other file is needed as 96711008.abf doesnt contain one
+      
+          test_file = "https://drive.humanbrainproject.eu/f/076de9c19e0c4447a95e/?dl=1"
+       
+          request = factory.get('spiketraindata/',{"url":test_file,'segment_id':0}, format='json')
+          spiketrain = SpikeTrain().get(request)
+          json_data = json.loads(spiketrain.content)
+          container = ["units","t_stop","times"]
+
+          for i in range(20):
+                for x in container:
+                   self.assertEqual(x in json_data[str(i)],True)
+
+
+
       
 
     def test_get_block_missing_param(self):
-          # block made to test jsonresponse when missing requirement
-          # url parameter(string) is required for block().get()
+          
+           # block made to test jsonresponse when missing requirement
+           # url parameter(string) is required for block().get()
 
-          # missing url test
-          request = factory.get('blockdata/',{}, format='json')
-          block = Block().get(request)
-          json_data = json.loads(block.content)
-          self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
+           # missing url test
+           request = factory.get('blockdata/',{}, format='json')
+           block = Block().get(request)
+           json_data = json.loads(block.content)
+           self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
    
 
     def test_get_segment_missing_param(self):
-          # test for missing requirement in segment
-          # url parameter(string) is requirement for segment().get()
-          # segment_id --- int
+           # test for missing requirement in segment
+           # url parameter(string) is requirement for segment().get()
+           # segment_id --- int
 
-          # missing url test
-          request = factory.get('segmentdata/',{}, format='json')
-          segment = Segment().get(request)
-          json_data = json.loads(segment.content)
-          self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
+           # missing url test
+           request = factory.get('segmentdata/',{}, format='json')
+           segment = Segment().get(request)
+           json_data = json.loads(segment.content)
+           self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
           
-          # missing segment_id
-          request = factory.get('segmentdata/',{"url":url_full_test_file}, format='json')
-          segment = Segment().get(request)
-          json_data = json.loads(segment.content)
-          self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
+           # missing segment_id
+           request = factory.get('segmentdata/',{"url":url_full_test_file}, format='json')
+           segment = Segment().get(request)
+           json_data = json.loads(segment.content)
+           self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
 
-          # index_error segment_id
-          request = factory.get('segmentdata/',{"url":url_full_test_file,"segment_id":18}, format='json')
-          segment = Segment().get(request)
-          json_data = json.loads(segment.content)
-          self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
+           # index_error segment_id
+           request = factory.get('segmentdata/',{"url":url_full_test_file,"segment_id":18}, format='json')
+           segment = Segment().get(request)
+           json_data = json.loads(segment.content)
+           self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
           
          
 
     def test_get_analogsignal_missing_param(self):
-          # test for missing requirement in analogsignal
-          # url parameter(string) is requirement for analogsignal().get()
-          # segment_id --- int
-          # analog_signal_id --- int 
-          # downsamplingfactor --- int 
+          
+           # test for missing requirement in analogsignal
+           # url parameter(string) is requirement for analogsignal().get()
+           # segment_id --- int
+           # analog_signal_id --- int 
+           # downsamplingfactor --- int 
 
-          # missing url test
-          request = factory.get('analogsignaldata/',{}, format='json')
-          analogsignal = AnalogSignal().get(request)
-          json_data = json.loads(analogsignal.content)
+           # missing url test
+           request = factory.get('analogsignaldata/',{}, format='json')
+           analogsignal = AnalogSignal().get(request)
+           json_data = json.loads(analogsignal.content)
+           self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
+
+           # missing segment_id
+           request = factory.get('analogsignaldata/',{"url":url_full_test_file}, format='json')
+           analogsignal = AnalogSignal().get(request)
+           json_data = json.loads(analogsignal.content)
+           self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
+
+           # missing analog_signal_id
+           request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1}, format='json')
+           analogsignal = AnalogSignal().get(request)
+           json_data = json.loads(analogsignal.content)
+           self.assertEqual(json_data,{'error': 'analog_signal_id parameter is missing','message': ''})
+
+           # index_error segment_id
+           request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":18,"analog_signal_id":1}, format='json')
+           analogsignal = AnalogSignal().get(request)
+           json_data = json.loads(analogsignal.content)
+          
+           self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
+
+
+    def test_get_spriketrain_missing_param(self):
+
+          test_file = "https://drive.humanbrainproject.eu/f/076de9c19e0c4447a95e/?dl=1"
+       
+          # test for missing url
+          request = factory.get('spiketraindata/',{}, format='json')
+          spiketrain = SpikeTrain().get(request)
+          json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
-
-          # missing segment_id
-          request = factory.get('analogsignaldata/',{"url":url_full_test_file}, format='json')
-          analogsignal = AnalogSignal().get(request)
-          json_data = json.loads(analogsignal.content)
+         
+          
+          #test for missing segment_id
+          request = factory.get('spiketraindata/',{'url':test_file}, format='json')
+          spiketrain = SpikeTrain().get(request)
+          json_data = json.loads(spiketrain.content) 
           self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
-
-          # missing analog_signal_id
-          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1}, format='json')
-          analogsignal = AnalogSignal().get(request)
-          json_data = json.loads(analogsignal.content)
-          self.assertEqual(json_data,{'error': 'analog_signal_id parameter is missing','message': ''})
-
-          # index_error segment_id
-          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":18,"analog_signal_id":1}, format='json')
-          analogsignal = AnalogSignal().get(request)
-          json_data = json.loads(analogsignal.content)
-          print(json_data)
+          
+          #test for indexerror on segment_id
+          request = factory.get('spiketraindata/',{'url':test_file,'segment_id':2}, format='json')
+          spiketrain = SpikeTrain().get(request)
+          json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
 
           
-        
-        
+       
         
   

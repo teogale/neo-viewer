@@ -164,13 +164,10 @@ class Segment(APIView):
         # url        --- string
         # semgent_id --- int
 
-
         # check for missing url parameter
         if not request.GET.get('url'):
             return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
-
-
 
         na_file = _get_file_from_url(request)
         neo_io = get_io(na_file)
@@ -192,8 +189,6 @@ class Segment(APIView):
         except IndexError:
              return JsonResponse({'error': 'IndexError on segment_id', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
-
-        # todo, catch IndexError, and return a 404 response
 
         seg_data_test = {
                     'name': "segment 1",
@@ -247,7 +242,7 @@ class AnalogSignal(APIView):
         lazy = False
         # parameter for analogsignal
         # url --- string
-        # segment_id --- int 
+        # check for missing segment_id p
         # analog_signal_id --- int
 
         # check for missing url parameter
@@ -288,7 +283,7 @@ class AnalogSignal(APIView):
         try:
             segment = block.segments[id_segment]
         except IndexError:
-            return JsonResponse({'error': 'IndexError on segment_id', 'message': ''},
+            return JsonResponse({'error': 'IndexError on segment_id' , 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         graph_data = {}
@@ -300,7 +295,8 @@ class AnalogSignal(APIView):
                 analogsignal = segment.analogsignals[id_analog_signal]
             graph_data["t_start"] = analogsignal.t_start.item()
             graph_data["t_stop"] = analogsignal.t_stop.item()
-            if request.GET['down_sample_factor']:
+            
+            if request.GET.get('down_sample_factor'):
                 graph_data["sampling_period"] = analogsignal.sampling_period.item() * int(request.GET['down_sample_factor'])
             else:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item()
@@ -317,7 +313,7 @@ class AnalogSignal(APIView):
 
         if analogsignal.shape[1] > 1:
             # multiple channels
-            if not len(segment.irregularlysampledsignals) > 0 and request.GET['down_sample_factor']:
+            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor'):
                 dsf = int(request.GET['down_sample_factor'])
                 for i in range(0, len(analogsignal[0])):
                     analog_signal_values.append(analogsignal[::dsf, i].magnitude[:, 0].tolist())
@@ -326,7 +322,7 @@ class AnalogSignal(APIView):
                     analog_signal_values.append(analogsignal[::, i].magnitude[:, 0].tolist())
         else:
             # single channel
-            if not len(segment.irregularlysampledsignals) > 0 and request.GET['down_sample_factor']:
+            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor'):
                 dsf = int(request.GET['down_sample_factor'])
                 analog_signal_values = analogsignal[::dsf, 0].magnitude[:, 0].tolist()
             else:
@@ -370,8 +366,12 @@ class SpikeTrain(APIView):
         except MultiValueDictKeyError:
             return JsonResponse({'error': 'segment_id parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
-        #index error possible
-        segment = block.segments[id_segment]
+        #check for index error                
+        try:
+            segment = block.segments[id_segment]
+        except IndexError:
+            return JsonResponse({'error': 'IndexError on segment_id', 'message': ''},
+                                status=status.HTTP_400_BAD_REQUEST)
 
         if lazy:
             spiketrains = segment.spiketrains.load()
