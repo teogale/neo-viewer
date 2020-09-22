@@ -171,6 +171,7 @@ class Segment(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
 
+
         na_file = _get_file_from_url(request)
         neo_io = get_io(na_file)
         if neo_io.support_lazy:
@@ -179,14 +180,19 @@ class Segment(APIView):
         else:
             block = neo_io.read_block()
 
+        # check for missing semgent_id parameter
         try:
             id_segment = int(request.GET['segment_id'])
         except MultiValueDictKeyError:
             return JsonResponse({'error': 'segment_id parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
+        # check for indexerror on segment_id                         
+        try:
+            segment = block.segments[id_segment]
+        except IndexError:
+             return JsonResponse({'error': 'IndexError on segment_id', 'message': ''},
+                                status=status.HTTP_400_BAD_REQUEST)
 
-
-        segment = block.segments[id_segment]
         # todo, catch IndexError, and return a 404 response
 
         seg_data_test = {
@@ -239,6 +245,11 @@ class AnalogSignal(APIView):
 
     def get(self, request, format=None, **kwargs):
         lazy = False
+        # parameter for analogsignal
+        # url --- string
+        # segment_id --- int 
+        # analog_signal_id --- int
+
         # check for missing url parameter
         if not request.GET.get('url'):
             return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
@@ -266,15 +277,19 @@ class AnalogSignal(APIView):
             return JsonResponse({'error': 'segment_id parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
 
+        # check for missing analog_signal_id parameter
         try:
             id_analog_signal = int(request.GET['analog_signal_id'])
         except MultiValueDictKeyError:
             return JsonResponse({'error': 'analog_signal_id parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-        # todo, catch MultiValueDictKeyError in case segment_id or analog_signal_id aren't given, and return a 400 Bad Request response
-        # index error is possible
-        segment = block.segments[id_segment]
+        # check for index error on segment_id
+        try:
+            segment = block.segments[id_segment]
+        except IndexError:
+            return JsonResponse({'error': 'IndexError on segment_id', 'message': ''},
+                                status=status.HTTP_400_BAD_REQUEST)
 
         graph_data = {}
         analogsignal = None

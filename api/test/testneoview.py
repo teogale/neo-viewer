@@ -146,7 +146,7 @@ class test_views(TestCase):
          name = ['Chan0mV','AO#0']
          valueunit = ['mV','nA']
          for analogsignal_id in range(2):
-          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1,"analog_signal_id":analogsignal_id,"down_sample_factor":1},format='json')
+          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1,"analog_signal_id":analogsignal_id,},format='json')
           analog_signal = AnalogSignal().get(request)
           json_data = json.loads(analog_signal.content)
        
@@ -197,7 +197,6 @@ class test_views(TestCase):
           request = factory.get('segmentdata/',{}, format='json')
           segment = Segment().get(request)
           json_data = json.loads(segment.content)
-
           self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
           
           # missing segment_id
@@ -205,6 +204,12 @@ class test_views(TestCase):
           segment = Segment().get(request)
           json_data = json.loads(segment.content)
           self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
+
+          # index_error segment_id
+          request = factory.get('segmentdata/',{"url":url_full_test_file,"segment_id":18}, format='json')
+          segment = Segment().get(request)
+          json_data = json.loads(segment.content)
+          self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
           
          
 
@@ -233,7 +238,14 @@ class test_views(TestCase):
           json_data = json.loads(analogsignal.content)
           self.assertEqual(json_data,{'error': 'analog_signal_id parameter is missing','message': ''})
 
-       
+          # index_error segment_id
+          request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":18,"analog_signal_id":1}, format='json')
+          analogsignal = AnalogSignal().get(request)
+          json_data = json.loads(analogsignal.content)
+          print(json_data)
+          self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
+
+          
         
         
         
