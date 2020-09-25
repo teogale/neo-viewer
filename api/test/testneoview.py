@@ -3,7 +3,7 @@ from neoview.views import Block, AnalogSignal, Segment, SpikeTrain
 from rest_framework.test import APIRequestFactory
 import json
 
-url_full_test_file = "https://github.com/teogale/test_file_api/blob/master/96711008.abf"
+url_full_test_file = "https://github.com/teogale/test_file_api/raw/master/96711008.abf"
 factory = APIRequestFactory()
 
 
@@ -36,7 +36,7 @@ class test_views(TestCase):
                # self.assertEqual(obj['file_name'],'96711008.abf')
 
 
-   
+
 
     def test_get_block(self):
           # block made to test jsonresponse when reading a file with full given information
@@ -54,7 +54,7 @@ class test_views(TestCase):
           # name         --- string
           # rec_datetime --- string
           # file_name    --- string
-          
+
           # segment data --- type
           # annotation   --- dictionnary
           # description  --- string
@@ -62,7 +62,7 @@ class test_views(TestCase):
           # rec_datetime --- string
           # name         --- string
 
-          # irregularlysampledsignal --- list 
+          # irregularlysampledsignal --- list
           # analogsignals            --- list
           # spiketrains              --- list
 
@@ -70,10 +70,10 @@ class test_views(TestCase):
           request = factory.get('blockdata/',{"url":url_full_test_file}, format='json')
           block = Block().get(request)
           json_data = json.loads(block.content)
-         
-          
-         
-          # testing the number of block 
+
+
+
+          # testing the number of block
           number_of_block = len(json_data["block"])
           self.assertEqual(number_of_block, 1)
 
@@ -83,8 +83,8 @@ class test_views(TestCase):
 
           # testing rec_datetime
           self.assertEqual(json_data["block"][0]['rec_datetime'],'1996-07-11T17:03:40')
-          
-          # testing file_name 
+
+          # testing file_name
           self.assertEqual(json_data["block"][0]['file_name'],'96711008.abf')
 
           # common test for block and segment
@@ -99,9 +99,9 @@ class test_views(TestCase):
                self.assertEqual(json_data["block"][0]['segments'][i]['analogsignals'],[])
                # test if spiketrains is an empty list
                self.assertEqual(json_data["block"][0]['segments'][i]['spiketrains'],[])
-               
+
     def test_segment(self):
-          
+
           # url && segment_id required for Segment().get()
           # segment data --- type
           # annotation   --- dictionnary
@@ -110,16 +110,16 @@ class test_views(TestCase):
           # rec_datetime --- string
           # name         --- string
 
-          # irregularlysampledsignal --- list 
+          # irregularlysampledsignal --- list
           # analogsignals            --- list
           # spiketrains              --- list
-     
+
           # segment composed of 2 analogsignal
 
           request = factory.get('segmentdata/',{"url":url_full_test_file, "segment_id":1}, format='json')
           segment = Segment().get(request)
           json_data = json.loads(segment.content)
-            
+
 
           self.metadata_test(json_data)
             # test if irregularlysampledsignals is empty list
@@ -131,9 +131,9 @@ class test_views(TestCase):
 
 
     def test_get_analogsignal(self):
-         
+
          # analogsignal require segment_id, analog_signal_id, down_sample_factor
-       
+
          # analogsignal data --- type
          # t_start --- float
          # t_stop --- float
@@ -149,7 +149,7 @@ class test_views(TestCase):
           request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":1,"analog_signal_id":analogsignal_id},format='json')
           analog_signal = AnalogSignal().get(request)
           json_data = json.loads(analog_signal.content)
-       
+
 
           self.assertEqual(json_data['t_start'],4.0)
           self.assertEqual(json_data['t_stop'],4.7168)
@@ -157,20 +157,20 @@ class test_views(TestCase):
           # not tested values
           self.assertEqual(json_data['name'],name[analogsignal_id])
           self.assertEqual(json_data['times_dimensionality'],'s')
-         
+
           self.assertEqual(json_data['values_units'],valueunit[analogsignal_id])
 
     def test_spriketrain(self):
 
           # compose of 1 segment
-          # 19 spiketrain 
+          # 19 spiketrain
           # units --- float
           # t_stop --- float
           # times --- list
           # to test spiketrain an other file is needed as 96711008.abf doesnt contain one
-      
+
           test_file = "https://drive.humanbrainproject.eu/f/076de9c19e0c4447a95e/?dl=1"
-       
+
           request = factory.get('spiketraindata/',{"url":test_file,'segment_id':0}, format='json')
           spiketrain = SpikeTrain().get(request)
           json_data = json.loads(spiketrain.content)
@@ -182,10 +182,10 @@ class test_views(TestCase):
 
 
 
-      
+
 
     def test_get_block_missing_param(self):
-          
+
            # block made to test jsonresponse when missing requirement
            # url parameter(string) is required for block().get()
 
@@ -194,7 +194,7 @@ class test_views(TestCase):
            block = Block().get(request)
            json_data = json.loads(block.content)
            self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
-   
+
 
     def test_get_segment_missing_param(self):
            # test for missing requirement in segment
@@ -206,7 +206,7 @@ class test_views(TestCase):
            segment = Segment().get(request)
            json_data = json.loads(segment.content)
            self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
-          
+
            # missing segment_id
            request = factory.get('segmentdata/',{"url":url_full_test_file}, format='json')
            segment = Segment().get(request)
@@ -218,16 +218,16 @@ class test_views(TestCase):
            segment = Segment().get(request)
            json_data = json.loads(segment.content)
            self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
-          
-         
+
+
 
     def test_get_analogsignal_missing_param(self):
-          
+
            # test for missing requirement in analogsignal
            # url parameter(string) is requirement for analogsignal().get()
            # segment_id --- int
-           # analog_signal_id --- int 
-           # downsamplingfactor --- int 
+           # analog_signal_id --- int
+           # downsamplingfactor --- int
 
            # missing url test
            request = factory.get('analogsignaldata/',{}, format='json')
@@ -251,34 +251,29 @@ class test_views(TestCase):
            request = factory.get('analogsignaldata/',{"url":url_full_test_file,"segment_id":18,"analog_signal_id":1}, format='json')
            analogsignal = AnalogSignal().get(request)
            json_data = json.loads(analogsignal.content)
-          
+
            self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
 
 
     def test_get_spriketrain_missing_param(self):
 
           test_file = "https://drive.humanbrainproject.eu/f/076de9c19e0c4447a95e/?dl=1"
-       
+
           # test for missing url
           request = factory.get('spiketraindata/',{}, format='json')
           spiketrain = SpikeTrain().get(request)
           json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'URL parameter is missing','message': ''})
-         
-          
+
+
           #test for missing segment_id
           request = factory.get('spiketraindata/',{'url':test_file}, format='json')
           spiketrain = SpikeTrain().get(request)
-          json_data = json.loads(spiketrain.content) 
+          json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
-          
+
           #test for indexerror on segment_id
           request = factory.get('spiketraindata/',{'url':test_file,'segment_id':2}, format='json')
           spiketrain = SpikeTrain().get(request)
           json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})
-
-          
-       
-        
-  
