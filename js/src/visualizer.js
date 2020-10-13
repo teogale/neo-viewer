@@ -13,7 +13,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
     $scope.channelSignals = null;
     $scope.graphType = "spiketrains";
     $scope.downsamplefactor = '';
-
+    
     $scope.showMultiChannelSignal = function()
     {
         $scope.channelSignals = true;
