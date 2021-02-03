@@ -11,4 +11,4 @@ klusta==3.0.16
 pynwb==1.4.0
 #stfio
 #neo==0.9.0
-git+https://github.com/NeuralEnsemble/python-neo@nwb2#egg=neo
+git+https://github.com/NeuralEnsemble/python-neo@neoview#egg=neo
