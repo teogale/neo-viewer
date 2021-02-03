@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework.views import APIView
 from neo.io import get_io
-from neo import io
+import neo
 from rest_framework import status
 from os.path import basename
 try:
@@ -26,9 +26,20 @@ from time import sleep
 # logger = logging.getLogger(__name__)
 
 
+def custom_get_io(filename):
+    try:
+        io = get_io(filename)
+    except AssertionError as err:
+        if "try_signal_grouping" in str(err):
+            io = neo.io.Spike2IO(filename, try_signal_grouping=False)
+        else:
+            raise
+    return io
+
+
 def _get_file_from_url(request):
     url = request.GET.get('url')
-   
+
     response = urlopen(url)
     filename = basename(response.url)
     if not os.path.isfile(filename):
@@ -38,7 +49,7 @@ def _get_file_from_url(request):
 
     # if we have a text file, try to download the accompanying json file
     name, ext = os.path.splitext(filename)
-    if ext[1:] in io.AsciiSignalIO.extensions:  # ext has a leading '.'
+    if ext[1:] in neo.io.AsciiSignalIO.extensions:  # ext has a leading '.'
         metadata_filename = filename.replace(ext, "_about.json")
         metadata_url = url.replace(ext, "_about.json")
         try:
@@ -47,7 +58,7 @@ def _get_file_from_url(request):
             pass
 
     return filename
- 
+
 
 def _handle_dict(ob):
     return {k: unicode(v) for k, v in ob.items()}
@@ -59,7 +70,7 @@ class Block(APIView):
 
         # parameter for block
         # url --- string
-        
+
         # check for missing url parameter
         if not request.GET.get('url'):
             return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
@@ -68,10 +79,10 @@ class Block(APIView):
         lazy = False
         na_file = _get_file_from_url(request)
 
-        neo_io = get_io(na_file)
+        neo_io = custom_get_io(na_file)
         if 'type' in request.GET and request.GET.get('type'):
             iotype = request.GET.get('type')
-            method = getattr(io, iotype)
+            method = getattr(neo.io, iotype)
             r = method(filename=na_file)
             if r.support_lazy:
                 block = r.read_block(lazy=True)
@@ -170,7 +181,7 @@ class Segment(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         na_file = _get_file_from_url(request)
-        neo_io = get_io(na_file)
+        neo_io = custom_get_io(na_file)
         if neo_io.support_lazy:
             block = neo_io.read_block(lazy=True)
             lazy = True
@@ -183,7 +194,7 @@ class Segment(APIView):
         except MultiValueDictKeyError:
             return JsonResponse({'error': 'segment_id parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
-        # check for indexerror on segment_id                         
+        # check for indexerror on segment_id
         try:
             segment = block.segments[id_segment]
         except IndexError:
@@ -253,8 +264,8 @@ class AnalogSignal(APIView):
         na_file = _get_file_from_url(request)
         # infinite loop possible
         while True:  # todo, find better solution
-            try: 
-                neo_io = get_io(na_file)
+            try:
+                neo_io = custom_get_io(na_file)
                 break
             except OSError:
                 sleep(5)
@@ -264,7 +275,7 @@ class AnalogSignal(APIView):
             lazy = True
         else:
             block = neo_io.read_block()
-        
+
         # check for missing segment_id parameter
         try:
             id_segment = int(request.GET['segment_id'])
@@ -295,7 +306,7 @@ class AnalogSignal(APIView):
                 analogsignal = segment.analogsignals[id_analog_signal]
             graph_data["t_start"] = analogsignal.t_start.item()
             graph_data["t_stop"] = analogsignal.t_stop.item()
-            
+
             if request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item() * int(request.GET['down_sample_factor'])
             else:
@@ -309,8 +320,10 @@ class AnalogSignal(APIView):
 
         # todo, catch any IndexErrors, and return a 404 response
 
-        analog_signal_values = []
+        if analogsignal is None:
+            return JsonResponse({})
 
+        analog_signal_values = []
         if analogsignal.shape[1] > 1:
             # multiple channels
             if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
@@ -349,7 +362,7 @@ class SpikeTrain(APIView):
         na_file = _get_file_from_url(request)
         while True:
             try:
-                neo_io = get_io(na_file)
+                neo_io = custom_get_io(na_file)
                 break
             except OSError:
                 sleep(5)
@@ -366,7 +379,7 @@ class SpikeTrain(APIView):
         except MultiValueDictKeyError:
             return JsonResponse({'error': 'segment_id parameter is missing', 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
-        #check for index error                
+        #check for index error
         try:
             segment = block.segments[id_segment]
         except IndexError:
@@ -374,7 +387,7 @@ class SpikeTrain(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         if lazy:
-            spiketrains = segment.spiketrains.load()
+            spiketrains = [st.load() for st in segment.spiketrains]
         else:
             spiketrains = segment.spiketrains
 
