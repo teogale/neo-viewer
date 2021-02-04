@@ -40,9 +40,10 @@ def _get_cache_path(url):
     url_parts = urlparse(url)
     base_url = urlunparse((url_parts.scheme, url_parts.netloc, os.path.dirname(url_parts.path), "", "", ""))
     dir_name = hashlib.sha1(base_url.encode('utf-8')).hexdigest()
-    return os.path.join(getattr(settings, "DOWNLOADED_FILE_CACHE_DIR", ""),
-                        dir_name,
-                        os.path.basename(url_parts.path))
+    dir_path = os.path.join(getattr(settings, "DOWNLOADED_FILE_CACHE_DIR", ""),
+                            dir_name)
+    os.makedirs(dir_path, exist_ok=True)
+    return os.path.join(dir_path, os.path.basename(url_parts.path))
 
 
 def _get_file_from_url(request):
