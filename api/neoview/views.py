@@ -39,7 +39,7 @@ def _get_cache_path(url):
     """
     url_parts = urlparse(url)
     base_url = urlunparse((url_parts.scheme, url_parts.netloc, os.path.dirname(url_parts.path), "", "", ""))
-    dir_name = hashlib.sha1(base_url).encode('utf-8').hexdigest()
+    dir_name = hashlib.sha1(base_url.encode('utf-8')).hexdigest()
     return os.path.join(settings.get("DOWNLOADED_FILE_CACHE_DIR", ""),
                         dir_name,
                         os.path.basename(url_parts.path))
