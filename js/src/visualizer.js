@@ -400,7 +400,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                             console.log("Segment has irregularly sampled signals");
                             $scope.block.segments[$scope.currentSegmentId].irregularlysampledsignals[$scope.currentAnalogSignalId] = $scope.signal;
                         }
-                        console.log(data);
+                        //console.log(data);
                         Graphics.initGraph($scope.signal).then(function(graph_data) {
                             $scope.graph_data = graph_data;
                             var layout = {
@@ -468,7 +468,7 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                 function(data) {
                     $scope.spiketrains = data;
                     $scope.block.segments[$scope.currentSegmentId].spiketrains = $scope.spiketrains;
-                    console.log(data);
+                    //console.log(data);
                     //$scope.spiketrains_options = getScatterChartOptions();
                     //cache_spiketrains[$scope.currentSegmentId]['options'] = $scope.spiketrains_options;
                     var graph_data = [];
@@ -685,13 +685,15 @@ angular.module('neo-visualizer', ['ng', 'ngResource'])
                     </div>
                     <form class="form-inline">
                     <div ng-show="segment.consistency">
-                        <label>Show all signals on the same axes:
-                            <input type="checkbox" ng-model="segmentCheck" ng-change="showSegmentSignals(segmentCheck)" >
+                        <label>
+                            <input type="checkbox" ng-model="segmentCheck" ng-change="showSegmentSignals(segmentCheck)">
+	    		    <span>Show all signals on the same axes</span>	
                         </label>
                     </div>
                     <div ng-show="block.consistency">
-                        <label>Show signals from all segments on the same axes:
+                        <label>
                             <input type="checkbox" ng-model="blockCheck" ng-change="showBlockSignals(blockCheck)">
+	    		    <span>Show signals from all segments on the same axes</span>	
                         </label>
                     </div>
                     <div ng-show="!blockSignals && !block.spike_trains">
