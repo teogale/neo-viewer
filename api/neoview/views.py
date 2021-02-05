@@ -1,29 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
+import hashlib
+import logging
+from time import sleep
+from urllib.request import urlopen, urlretrieve, HTTPError
+from urllib.parse import urlparse, urlunparse
+
 from django.http import JsonResponse
 from django.utils.datastructures import MultiValueDictKeyError
+from django.conf import settings
 from rest_framework.views import APIView
+from rest_framework import status
+
 from neo.io import get_io
 import neo
-from rest_framework import status
-from os.path import basename
-try:
-    from urllib import urlretrieve, HTTPError
-except ImportError:
-    from urllib.request import urlretrieve, HTTPError
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib2 import urlopen
-try:
-    unicode
-except NameError:
-    unicode = str
-# import logging
-from time import sleep
 
-# logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 def custom_get_io(filename):
@@ -37,13 +31,31 @@ def custom_get_io(filename):
     return io
 
 
+def _get_cache_path(url):
+    """
+    For caching, we store files in a flat directory structure, where the directory name is
+    based on the URL, but files in the same directory on the original server end up in the
+    same directory in our cache.
+    """
+    url_parts = urlparse(url)
+    base_url = urlunparse((url_parts.scheme, url_parts.netloc, os.path.dirname(url_parts.path), "", "", ""))
+    dir_name = hashlib.sha1(base_url.encode('utf-8')).hexdigest()
+    dir_path = os.path.join(getattr(settings, "DOWNLOADED_FILE_CACHE_DIR", ""),
+                            dir_name)
+    os.makedirs(dir_path, exist_ok=True)
+    return os.path.join(dir_path, os.path.basename(url_parts.path))
+
+
 def _get_file_from_url(request):
     url = request.GET.get('url')
 
+    # we first open the url to resolve any redirects
     response = urlopen(url)
-    filename = basename(response.url)
+    resolved_url = response.geturl()
+
+    filename = _get_cache_path(resolved_url)
     if not os.path.isfile(filename):
-        urlretrieve(url, filename)
+        urlretrieve(resolved_url, filename)
     # todo: wrap previous line in try..except so we can return a 404 if the file is not found
     #       or a 500 if the local disk is full
 
@@ -51,7 +63,7 @@ def _get_file_from_url(request):
     name, ext = os.path.splitext(filename)
     if ext[1:] in neo.io.AsciiSignalIO.extensions:  # ext has a leading '.'
         metadata_filename = filename.replace(ext, "_about.json")
-        metadata_url = url.replace(ext, "_about.json")
+        metadata_url = resolved_url.replace(ext, "_about.json")
         try:
             urlretrieve(metadata_url, metadata_filename)
         except HTTPError:
@@ -61,7 +73,7 @@ def _get_file_from_url(request):
 
 
 def _handle_dict(ob):
-    return {k: unicode(v) for k, v in ob.items()}
+    return {k: str(v) for k, v in ob.items()}
 
 
 class Block(APIView):
