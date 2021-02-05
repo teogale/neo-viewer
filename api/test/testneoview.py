@@ -2,6 +2,8 @@ from django.test import TestCase
 from neoview.views import Block, AnalogSignal, Segment, SpikeTrain
 from rest_framework.test import APIRequestFactory
 import json
+import os
+
 
 url_full_test_file = "https://github.com/teogale/test_file_api/raw/master/96711008.abf"
 factory = APIRequestFactory()
@@ -24,7 +26,7 @@ class test_views(TestCase):
                self.assertEqual(obj['description'],'')
 
                # testing file_origin
-               self.assertEqual(obj['file_origin'],'96711008.abf')
+               self.assertEqual(os.path.basename(obj['file_origin']),'96711008.abf')
 
                # testing name
                self.assertEqual(obj['name'],'')
@@ -85,7 +87,7 @@ class test_views(TestCase):
           self.assertEqual(json_data["block"][0]['rec_datetime'],'1996-07-11T17:03:40')
 
           # testing file_name
-          self.assertEqual(json_data["block"][0]['file_name'],'96711008.abf')
+          self.assertEqual(os.path.basename(json_data["block"][0]['file_name']),'96711008.abf')
 
           # common test for block and segment
           self.metadata_test(obj=json_data['block'][0])
@@ -171,7 +173,7 @@ class test_views(TestCase):
 
           test_file = "https://drive.humanbrainproject.eu/f/076de9c19e0c4447a95e/?dl=1"
 
-          request = factory.get('spiketraindata/',{"url":test_file,'segment_id':0}, format='json')
+          request = factory.get('spiketraindata/',{"url":test_file,'segment_id':0, 'type': 'NixIO'}, format='json')
           spiketrain = SpikeTrain().get(request)
           json_data = json.loads(spiketrain.content)
           container = ["units","t_stop","times"]
@@ -267,13 +269,13 @@ class test_views(TestCase):
 
 
           #test for missing segment_id
-          request = factory.get('spiketraindata/',{'url':test_file}, format='json')
+          request = factory.get('spiketraindata/',{'url':test_file, 'type': 'NixIO'}, format='json')
           spiketrain = SpikeTrain().get(request)
           json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'segment_id parameter is missing','message': ''})
 
           #test for indexerror on segment_id
-          request = factory.get('spiketraindata/',{'url':test_file,'segment_id':2}, format='json')
+          request = factory.get('spiketraindata/',{'url':test_file,'segment_id':2, 'type': 'NixIO'}, format='json')
           spiketrain = SpikeTrain().get(request)
           json_data = json.loads(spiketrain.content)
           self.assertEqual(json_data,{'error': 'IndexError on segment_id','message': ''})

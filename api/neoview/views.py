@@ -76,44 +76,59 @@ def _handle_dict(ob):
     return {k: str(v) for k, v in ob.items()}
 
 
+class NeoViewError(Exception):
+
+    def __init__(self, message, status, detail=""):
+        self.message = message
+        self.status = status
+        self.detail = detail
+
+    def __str__(self):
+        return f"{self.__class__.name}: {self.message} {self.detail} status={self.status}"
+
+
+def get_block(request):
+    if not request.GET.get('url'):
+        raise NeoViewError('URL parameter is missing', status.HTTP_400_BAD_REQUEST)
+
+    lazy = False
+    na_file = _get_file_from_url(request)
+
+    if 'type' in request.GET and request.GET.get('type'):
+        iotype = request.GET.get('type')
+        method = getattr(neo.io, iotype)
+        r = method(filename=na_file)
+        if r.support_lazy:
+            block = r.read_block(lazy=True)
+            lazy = True
+        else:
+            block = r.read_block()
+    else:
+        neo_io = custom_get_io(na_file)
+        try:
+            if neo_io.support_lazy:
+                block = neo_io.read_block(lazy=True)
+                lazy = True
+            else:
+                block = neo_io.read_block()
+
+        except IOError as err:
+            # todo: need to be more fine grained. There could be other reasons
+            #       for an IOError
+            raise NeoViewError('incorrect file type',
+                               status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                               str(err))
+    return block, na_file, lazy
+
+
 class Block(APIView):
 
     def get(self, request, format=None, **kwargs):
-
-        # parameter for block
-        # url --- string
-
-        # check for missing url parameter
-        if not request.GET.get('url'):
-            return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        lazy = False
-        na_file = _get_file_from_url(request)
-
-        neo_io = custom_get_io(na_file)
-        if 'type' in request.GET and request.GET.get('type'):
-            iotype = request.GET.get('type')
-            method = getattr(neo.io, iotype)
-            r = method(filename=na_file)
-            if r.support_lazy:
-                block = r.read_block(lazy=True)
-                lazy = True
-            else:
-                block = r.read_block()
-        else:
-            try:
-                if neo_io.support_lazy:
-                    block = neo_io.read_block(lazy=True)
-                    lazy = True
-                else:
-                    block = neo_io.read_block()
-
-            except IOError as err:
-                # todo: need to be more fine grained. There could be other reasons
-                #       for an IOError
-                return JsonResponse({'error': 'incorrect file type', 'message': str(err)},
-                                    status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        try:
+            block, na_file, lazy =  get_block(request)
+        except NeoViewError as err:
+            return JsonResponse({'error': err.message, 'message': err.detail},
+                                status=err.status)
 
         block_data = {'block': [{
             'annotations': _handle_dict(block.annotations),
@@ -181,24 +196,16 @@ class Block(APIView):
 class Segment(APIView):
 
     def get(self, request, format=None, **kwargs):
-        lazy = False
 
         # parameter for segment
         # url        --- string
         # semgent_id --- int
 
-        # check for missing url parameter
-        if not request.GET.get('url'):
-            return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        na_file = _get_file_from_url(request)
-        neo_io = custom_get_io(na_file)
-        if neo_io.support_lazy:
-            block = neo_io.read_block(lazy=True)
-            lazy = True
-        else:
-            block = neo_io.read_block()
+        try:
+            block, na_file, lazy =  get_block(request)
+        except NeoViewError as err:
+            return JsonResponse({'error': err.message, 'message': err.detail},
+                                status=err.status)
 
         # check for missing semgent_id parameter
         try:
@@ -262,31 +269,16 @@ class Segment(APIView):
 class AnalogSignal(APIView):
 
     def get(self, request, format=None, **kwargs):
-        lazy = False
         # parameter for analogsignal
         # url --- string
         # check for missing segment_id p
         # analog_signal_id --- int
 
-        # check for missing url parameter
-        if not request.GET.get('url'):
-            return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        na_file = _get_file_from_url(request)
-        # infinite loop possible
-        while True:  # todo, find better solution
-            try:
-                neo_io = custom_get_io(na_file)
-                break
-            except OSError:
-                sleep(5)
-
-        if neo_io.support_lazy:
-            block = neo_io.read_block(lazy=True)
-            lazy = True
-        else:
-            block = neo_io.read_block()
+        try:
+            block, na_file, lazy =  get_block(request)
+        except NeoViewError as err:
+            return JsonResponse({'error': err.message, 'message': err.detail},
+                                status=err.status)
 
         # check for missing segment_id parameter
         try:
@@ -364,26 +356,12 @@ class AnalogSignal(APIView):
 class SpikeTrain(APIView):
 
     def get(self, request, format=None, **kwargs):
-        lazy = False
 
-        # check for missing url parameter
-        if not request.GET.get('url'):
-            return JsonResponse({'error': 'URL parameter is missing', 'message': ''},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        na_file = _get_file_from_url(request)
-        while True:
-            try:
-                neo_io = custom_get_io(na_file)
-                break
-            except OSError:
-                sleep(5)
-
-        if neo_io.support_lazy:
-            block = neo_io.read_block(lazy=True)
-            lazy = True
-        else:
-            block = neo_io.read_block()
+        try:
+            block, na_file, lazy =  get_block(request)
+        except NeoViewError as err:
+            return JsonResponse({'error': err.message, 'message': err.detail},
+                                status=err.status)
 
         # check for missing segment_id parameter
         try:
