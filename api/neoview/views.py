@@ -311,7 +311,7 @@ class AnalogSignal(APIView):
             graph_data["t_start"] = analogsignal.t_start.item()
             graph_data["t_stop"] = analogsignal.t_stop.item()
 
-            if request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
+            if request.GET.get('down_sample_factor') and int(request.GET.get('down_sample_factor')) >= 1:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item() * int(request.GET['down_sample_factor'])
             else:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item()
