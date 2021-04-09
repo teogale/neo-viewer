@@ -301,6 +301,7 @@ class AnalogSignal(APIView):
             return JsonResponse({'error': 'IndexError on segment_id' , 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
 
+        down_sample_factor = int(request.GET.get('down_sample_factor', 1))
         graph_data = {}
         analogsignal = None
         if len(segment.analogsignals) > 0:
@@ -311,8 +312,8 @@ class AnalogSignal(APIView):
             graph_data["t_start"] = analogsignal.t_start.item()
             graph_data["t_stop"] = analogsignal.t_stop.item()
 
-            if request.GET.get('down_sample_factor') and int(request.GET.get('down_sample_factor')) >= 1:
-                graph_data["sampling_period"] = analogsignal.sampling_period.item() * int(request.GET['down_sample_factor'])
+            if down_sample_factor > 1:
+                graph_data["sampling_period"] = analogsignal.sampling_period.item() * down_sample_factor
             else:
                 graph_data["sampling_period"] = analogsignal.sampling_period.item()
         elif len(segment.irregularlysampledsignals) > 0:
@@ -330,18 +331,16 @@ class AnalogSignal(APIView):
         analog_signal_values = []
         if analogsignal.shape[1] > 1:
             # multiple channels
-            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
-                dsf = int(request.GET['down_sample_factor'])
+            if not len(segment.irregularlysampledsignals) > 0 and down_sample_factor > 1:
                 for i in range(0, len(analogsignal[0])):
-                    analog_signal_values.append(analogsignal[::dsf, i].magnitude[:, 0].tolist())
+                    analog_signal_values.append(analogsignal[::down_sample_factor, i].magnitude[:, 0].tolist())
             else:
                 for i in range(0, len(analogsignal[0])):
                     analog_signal_values.append(analogsignal[::, i].magnitude[:, 0].tolist())
         else:
             # single channel
-            if not len(segment.irregularlysampledsignals) > 0 and request.GET.get('down_sample_factor') and request.GET.get('down_sample_factor')>=1:
-                dsf = int(request.GET['down_sample_factor'])
-                analog_signal_values = analogsignal[::dsf, 0].magnitude[:, 0].tolist()
+            if not len(segment.irregularlysampledsignals) > 0 and down_sample_factor > 1:
+                analog_signal_values = analogsignal[::down_sample_factor, 0].magnitude[:, 0].tolist()
             else:
                 analog_signal_values = analogsignal.magnitude[:, 0].tolist()
 
