@@ -301,7 +301,10 @@ class AnalogSignal(APIView):
             return JsonResponse({'error': 'IndexError on segment_id' , 'message': ''},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-        down_sample_factor = int(request.GET.get('down_sample_factor', 1))
+        try:
+            down_sample_factor = int(request.GET.get('down_sample_factor', 1))
+        except ValueError:
+            down_sample_factor = 1
         graph_data = {}
         analogsignal = None
         if len(segment.analogsignals) > 0:
